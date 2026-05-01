@@ -1,12 +1,16 @@
 import streamlit as st
 import requests
 from utils.parser import extract_text
+import matplotlib.pyplot as plt
+
+# 👉 Replace with your deployed API URL
+API_URL = "http://127.0.0.1:8000/match"   # change to Render URL later
 
 st.title("📄 Resume Keyword Matcher")
 
-# Upload multiple resumes
+# Upload resumes
 resumes = st.file_uploader(
-    "Upload Multiple Resumes",
+    "Upload Resumes",
     type=["pdf", "docx", "txt"],
     accept_multiple_files=True
 )
@@ -14,45 +18,54 @@ resumes = st.file_uploader(
 # Job description input
 jd = st.text_area("Paste Job Description")
 
-# 🔥 MAIN LOGIC (API CALL)
+# 🔥 MAIN LOGIC
 if resumes and jd:
 
     results = []
 
-    for file in resumes:
-        text = extract_text(file)
+    with st.spinner("Processing resumes..."):
 
-        try:
-            # 🔥 Call FastAPI backend
-            response = requests.post(
-                "http://127.0.0.1:8000/match",
-                json={"resume": text, "jd": jd}
-            )
+        for file in resumes:
+            text = extract_text(file)
 
-            result = response.json()
+            try:
+                response = requests.post(
+                    API_URL,
+                    json={"resume": text, "jd": jd},
+                    timeout=10   # ⏱ prevents hanging
+                )
 
-            results.append({
-                "name": file.name,
-                "tfidf": result["tfidf"],
-                "semantic": result["semantic"],
-                "ats": result["ats"],
-                "matched_skills": result["matched_skills"],
-                "missing_skills": result["missing_skills"]
-            })
+                # Check API status
+                if response.status_code != 200:
+                    st.error(f"API error for {file.name}")
+                    continue
 
-        except Exception as e:
-            st.error(f"Error processing {file.name}: {e}")
+                result = response.json()
 
-    # 🔥 SORT BY ATS SCORE
-    results = sorted(results, key=lambda x: x["ats"], reverse=True)
+                results.append({
+                    "name": file.name,
+                    "tfidf": result.get("tfidf", 0),
+                    "semantic": result.get("semantic", 0),
+                    "ats": result.get("ats", 0),
+                    "matched": result.get("matched_skills", []),
+                    "missing": result.get("missing_skills", [])
+                })
 
-    # 🏆 RANKING
-    st.subheader("🏆 Resume Ranking")
-    for r in results:
-        st.write(f"{r['name']} → ATS: {r['ats']}%")
+            except Exception as e:
+                st.error(f"Error processing {file.name}: {e}")
 
-    # 📊 TOP RESUME ANALYSIS
+    # ⚠️ Ensure results exist
     if results:
+
+        # 🔥 SORT
+        results = sorted(results, key=lambda x: x["ats"], reverse=True)
+
+        # 🏆 Ranking
+        st.subheader("🏆 Resume Ranking")
+        for r in results:
+            st.write(f"{r['name']} → ATS: {r['ats']}%")
+
+        # 📊 Top Resume
         top = results[0]
 
         st.subheader("📊 Top Resume Analysis")
@@ -68,5 +81,17 @@ if resumes and jd:
         st.metric("ATS Score", f"{top['ats']}%")
 
         # Skills
-        st.success(f"Matched Skills: {top['matched_skills']}")
-        st.error(f"Missing Skills: {top['missing_skills']}")
+        st.success(f"Matched Skills: {top['matched']}")
+        st.error(f"Missing Skills: {top['missing']}")
+
+        # 📊 Chart
+        labels = ["TF-IDF", "Semantic", "ATS"]
+        values = [top["tfidf"], top["semantic"], top["ats"]]
+
+        fig, ax = plt.subplots()
+        ax.bar(labels, values)
+
+        st.pyplot(fig)
+
+    else:
+        st.warning("No results generated. Check API or input data.")
