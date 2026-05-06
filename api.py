@@ -8,17 +8,24 @@ from database import cursor, conn
 
 app = FastAPI()
 
+# =========================
 # 📌 Request Model
+# =========================
 class RequestModel(BaseModel):
     resume: str
     jd: str
 
+
+# =========================
 # 📌 ATS Score Function
+# =========================
 def ats_score(tfidf, semantic, skill_match):
     return round((0.3 * tfidf + 0.5 * semantic + 0.2 * skill_match), 2)
 
 
+# =========================
 # 🚀 MAIN API ENDPOINT
+# =========================
 @app.post("/match")
 async def match(data: RequestModel):
     try:
@@ -34,8 +41,21 @@ async def match(data: RequestModel):
         resume_skills = extract_skills(clean_resume)
         jd_skills = extract_skills(clean_jd)
 
+        # =========================
+        # 🔥 SKILL MATCHING LOGIC
+        # =========================
         common = list(set(resume_skills) & set(jd_skills))
         missing = list(set(jd_skills) - set(resume_skills))
+
+        # =========================
+        # 🧪 DEBUG OUTPUT
+        # =========================
+        print("\n========== DEBUG ==========")
+        print("Resume Skills:", resume_skills)
+        print("JD Skills:", jd_skills)
+        print("Matched Skills:", common)
+        print("Missing Skills:", missing)
+        print("===========================\n")
 
         # 🔹 Skill match %
         skill_score = (len(common) / len(jd_skills)) * 100 if jd_skills else 0
@@ -43,14 +63,18 @@ async def match(data: RequestModel):
         # 🔹 ATS score
         ats = ats_score(tfidf, semantic, skill_score)
 
-        # ✅ STORE IN DATABASE
+        # =========================
+        # 💾 STORE IN DATABASE
+        # =========================
         cursor.execute(
             "INSERT INTO results (resume_name, ats, tfidf, semantic) VALUES (?, ?, ?, ?)",
-            ("resume", ats, tfidf, semantic)   # later we can pass real filename
+            ("resume", ats, tfidf, semantic)
         )
         conn.commit()
 
-        # ✅ RESPONSE
+        # =========================
+        # 📤 RESPONSE
+        # =========================
         return {
             "tfidf": tfidf,
             "semantic": semantic,
@@ -60,6 +84,7 @@ async def match(data: RequestModel):
         }
 
     except Exception as e:
+        print("ERROR:", str(e))
         return {
             "error": str(e)
         }
