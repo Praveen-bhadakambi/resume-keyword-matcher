@@ -1,21 +1,32 @@
-def extract_skills(text):
+import spacy
 
-    skills_db = [
-        "python", "java", "c++", "c", "javascript",
-        "machine learning", "deep learning", "nlp",
-        "sql", "mysql", "mongodb",
-        "aws", "docker", "kubernetes",
-        "react", "node", "flask", "fastapi",
-        "pandas", "numpy", "tensorflow", "pytorch",
-        "data analysis", "data science"
-    ]
+nlp = spacy.load("en_core_web_sm")
+
+# Technical skills database
+SKILLS_DB = [
+    "python", "java", "sql", "aws", "docker",
+    "machine learning", "deep learning",
+    "nlp", "tensorflow", "pytorch",
+    "react", "fastapi", "flask",
+    "mongodb", "mysql", "kubernetes"
+]
+
+def extract_skills(text):
 
     text = text.lower()
 
-    found_skills = []
+    doc = nlp(text)
 
-    for skill in skills_db:
+    found_skills = set()
+
+    # Keyword matching
+    for skill in SKILLS_DB:
         if skill in text:
-            found_skills.append(skill)
+            found_skills.add(skill)
 
-    return found_skills
+    # Named entity extraction
+    for ent in doc.ents:
+        if ent.text.lower() in SKILLS_DB:
+            found_skills.add(ent.text.lower())
+
+    return list(found_skills)
