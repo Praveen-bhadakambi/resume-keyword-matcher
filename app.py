@@ -73,14 +73,21 @@ if resumes and jd:
 
                 result = response.json()
 
-                # Handle partial results gracefully
+                # Handle partial results gracefully - Extract all available fields
                 ats_score = result.get("ats", 0)
                 tfidf_score = result.get("tfidf", 0)
                 semantic_score = result.get("semantic", 0)
                 matched_skills = result.get("matched_skills", [])
                 missing_skills = result.get("missing_skills", [])
                 predicted_role = result.get("predicted_role", "Unknown")
-                ai_feedback = result.get("ai_feedback", "AI feedback not available")
+                skill_match_score = result.get("skill_match_score", 0)
+                
+                # AI-Generated Features
+                ai_resume_suggestions = result.get("ai_resume_suggestions", "")
+                ats_optimization_tips = result.get("ats_optimization_tips", "")
+                resume_rewrite = result.get("resume_rewrite", "")
+                skill_recommendations = result.get("skill_recommendations", "")
+                action_verbs_suggestions = result.get("action_verbs_suggestions", "")
                 processing_time = result.get("processing_time", 0)
 
                 results.append({
@@ -91,7 +98,12 @@ if resumes and jd:
                     "matched": matched_skills,
                     "missing": missing_skills,
                     "role": predicted_role,
-                    "ai_feedback": ai_feedback,
+                    "skill_match_score": skill_match_score,
+                    "ai_resume_suggestions": ai_resume_suggestions,
+                    "ats_optimization_tips": ats_optimization_tips,
+                    "resume_rewrite": resume_rewrite,
+                    "skill_recommendations": skill_recommendations,
+                    "action_verbs": action_verbs_suggestions,
                     "time": processing_time
                 })
 
@@ -145,31 +157,91 @@ if resumes and jd:
 
         for r in results:
             with st.expander(f"📄 {r['name']} - ATS: {r['ats']:.1f}%"):
-
-                col1, col2 = st.columns(2)
-
+                
+                # 1. KEY METRICS
+                st.markdown("### 📊 Key Metrics")
+                col1, col2, col3 = st.columns(3)
+                
                 with col1:
+                    st.metric("ATS Score", f"{r['ats']:.1f}%", delta=f"Skill Match: {r['skill_match_score']:.0f}%")
                     st.metric("TF-IDF Similarity", f"{r['tfidf']:.1f}%")
-                    st.metric("Semantic Similarity", f"{r['semantic']:.1f}%")
-                    st.metric("Predicted Role", r['role'])
-
+                
                 with col2:
+                    st.metric("Semantic Similarity", f"{r['semantic']:.1f}%")
                     st.metric("Processing Time", f"{r['time']:.1f}s")
+                
+                with col3:
+                    st.metric("Predicted Role", r['role'])
+                    st.metric("Matched Skills", len(r['matched']))
 
+                st.markdown("---")
+                
+                # 2. SKILLS ANALYSIS
+                st.markdown("### 🎯 Skills Analysis")
+                col_skills1, col_skills2 = st.columns(2)
+                
+                with col_skills1:
                     if r['matched']:
                         st.success(f"✅ Matched Skills ({len(r['matched'])})")
-                        st.write(", ".join(r['matched'][:10]))  # Show first 10
+                        matched_text = ", ".join(sorted(r['matched']))
+                        st.caption(matched_text)
+                    else:
+                        st.info("No matched skills yet")
 
+                with col_skills2:
                     if r['missing']:
-                        st.warning(f"⚠️ Missing Skills ({len(r['missing'])})")
-                        st.write(", ".join(r['missing'][:10]))  # Show first 10
-
-                # AI Feedback (if available)
-                if "AI feedback temporarily unavailable" not in r['ai_feedback']:
-                    st.subheader("🤖 AI Feedback")
-                    st.info(r['ai_feedback'])
+                        st.error(f"❌ Missing Skills ({len(r['missing'])})")
+                        missing_text = ", ".join(sorted(r['missing']))
+                        st.caption(missing_text)
+                    else:
+                        st.success("No missing skills 🎉")
+                
+                st.markdown("---")
+                
+                # 3. AI RESUME SUGGESTIONS
+                st.markdown("### 💡 AI Resume Suggestions")
+                if r['ai_resume_suggestions']:
+                    st.info(r['ai_resume_suggestions'])
                 else:
-                    st.warning("🤖 AI feedback was not available for this resume")
+                    st.warning("⏳ Suggestions not available")
+                
+                st.markdown("---")
+                
+                # 4. ATS OPTIMIZATION TIPS
+                st.markdown("### 🎯 ATS Optimization Tips")
+                if r['ats_optimization_tips']:
+                    st.success(r['ats_optimization_tips'])
+                else:
+                    st.warning("⏳ Tips not available")
+                
+                st.markdown("---")
+                
+                # 5. RESUME REWRITING
+                st.markdown("### ✍️ Professional Resume Rewrite")
+                if r['resume_rewrite']:
+                    with st.expander("👉 Click to see rewritten resume bullets"):
+                        st.code(r['resume_rewrite'], language="markdown")
+                else:
+                    st.warning("⏳ Rewrite not available")
+                
+                st.markdown("---")
+                
+                # 6. SKILL RECOMMENDATIONS
+                st.markdown("### 🎓 Skill Development Recommendations")
+                if r['skill_recommendations']:
+                    st.info(r['skill_recommendations'])
+                else:
+                    st.warning("⏳ Recommendations not available")
+                
+                st.markdown("---")
+                
+                # 7. ACTION VERBS
+                st.markdown("### ✍️ Stronger Action Verbs")
+                if r['action_verbs']:
+                    with st.expander("👉 Click to see action verb suggestions"):
+                        st.info(r['action_verbs'])
+                else:
+                    st.warning("⏳ Suggestions not available")
 
         # =========================
         # 📊 CHARTS
@@ -189,42 +261,99 @@ if resumes and jd:
         st.pyplot(fig)
 
         # =========================
-        # 📊 TOP RESUME ANALYSIS
+        # 🏆 TOP RESUME ANALYSIS
         # =========================
         top = results[0]
 
-        st.subheader("📊 Top Resume Analysis")
+        st.subheader("🏆 Top Resume Analysis")
 
-        col1, col2 = st.columns(2)
-
+        # Key Metrics
+        col1, col2, col3 = st.columns(3)
+        
         with col1:
-            st.metric("TF-IDF", f"{top['tfidf']:.1f}%")
-            st.metric("Matched Skills", len(top['matched']))
+            st.metric("ATS Score", f"{top['ats']:.1f}%")
+            st.metric("TF-IDF Similarity", f"{top['tfidf']:.1f}%")
 
         with col2:
-            st.metric("Semantic", f"{top['semantic']:.1f}%")
-            st.metric("Missing Skills", len(top['missing']))
+            st.metric("Semantic Similarity", f"{top['semantic']:.1f}%")
+            st.metric("Skill Match", f"{top['skill_match_score']:.0f}%")
 
-        st.metric("ATS Score", f"{top['ats']:.1f}%")
+        with col3:
+            st.metric("Predicted Role", top['role'])
+            st.metric("Processing Time", f"{top['time']:.1f}s")
 
-        if top["matched"]:
-            st.success(f"Matched Skills: {', '.join(top['matched'][:10])}")
-        else:
-            st.warning("No matched skills found")
+        # Skills Summary
+        col_skills1, col_skills2 = st.columns(2)
+        
+        with col_skills1:
+            if top["matched"]:
+                st.success(f"✅ Matched Skills ({len(top['matched'])})")
+                matched_skills_text = ", ".join(sorted(top['matched']))
+                st.caption(matched_skills_text)
+            else:
+                st.warning("No matched skills found")
 
-        if top["missing"]:
-            st.error(f"Missing Skills: {', '.join(top['missing'][:10])}")
-        else:
-            st.success("No missing skills 🎉")
+        with col_skills2:
+            if top["missing"]:
+                st.error(f"❌ Missing Skills ({len(top['missing'])})")
+                missing_skills_text = ", ".join(sorted(top['missing']))
+                st.caption(missing_skills_text)
+            else:
+                st.success("No missing skills 🎉")
 
-        labels = ["TF-IDF", "Semantic", "ATS"]
-        values = [top["tfidf"], top["semantic"], top["ats"]]
+        # Score Visualization
+        labels = ["TF-IDF", "Semantic", "Skill Match", "ATS"]
+        values = [top["tfidf"], top["semantic"], top["skill_match_score"], top["ats"]]
 
-        fig2, ax2 = plt.subplots()
-        ax2.bar(labels, values, color=["#2196f3", "#ff9800", "#4caf50"])
-        ax2.set_ylim(0, 100)
-        ax2.set_title("Top Resume Performance")
+        fig2, ax2 = plt.subplots(figsize=(8, 4))
+        colors = ["#2196f3", "#ff9800", "#4caf50", "#f44336"]
+        ax2.barh(labels, values, color=colors)
+        ax2.set_xlim(0, 100)
+        ax2.set_xlabel("Score (%)")
+        ax2.set_title("Top Resume - Comprehensive Score Breakdown")
+        for i, v in enumerate(values):
+            ax2.text(v + 2, i, f"{v:.1f}%", va="center")
         st.pyplot(fig2)
+
+        # AI Features for Top Resume
+        st.markdown("---")
+        st.subheader("🤖 AI-Powered Insights for Top Resume")
+        
+        # Resume Suggestions
+        with st.expander("💡 AI Resume Suggestions", expanded=False):
+            if top['ai_resume_suggestions']:
+                st.info(top['ai_resume_suggestions'])
+            else:
+                st.warning("⏳ Generating suggestions...")
+        
+        # ATS Tips
+        with st.expander("🎯 ATS Optimization Tips", expanded=False):
+            if top['ats_optimization_tips']:
+                st.success(top['ats_optimization_tips'])
+            else:
+                st.warning("⏳ Generating tips...")
+        
+        # Resume Rewrite
+        with st.expander("✍️ Professional Resume Rewrite", expanded=False):
+            if top['resume_rewrite']:
+                st.code(top['resume_rewrite'], language="markdown")
+                st.info("👆 Use the above stronger bullet points in your resume")
+            else:
+                st.warning("⏳ Generating rewrite...")
+        
+        # Skill Recommendations
+        with st.expander("🎓 Missing Skills - Development Plan", expanded=False):
+            if top['skill_recommendations']:
+                st.info(top['skill_recommendations'])
+            else:
+                st.warning("⏳ Generating recommendations...")
+        
+        # Action Verbs
+        with st.expander("✍️ Stronger Action Verbs", expanded=False):
+            if top['action_verbs']:
+                st.markdown(top['action_verbs'])
+            else:
+                st.warning("⏳ Generating suggestions...")
 
         # =========================
         # 📥 CSV EXPORT
@@ -232,12 +361,15 @@ if resumes and jd:
         df = pd.DataFrame([{
             "Resume": r["name"],
             "ATS_Score": r["ats"],
-            "TFIDF_Score": r["tfidf"],
+            "TF-IDF_Score": r["tfidf"],
             "Semantic_Score": r["semantic"],
+            "Skill_Match_Score": r["skill_match_score"],
             "Predicted_Role": r["role"],
             "Matched_Skills": ", ".join(r["matched"]),
             "Missing_Skills": ", ".join(r["missing"]),
-            "AI_Feedback": r["ai_feedback"],
+            "Resume_Suggestions": r.get("ai_resume_suggestions", "")[:100],
+            "ATS_Tips": r.get("ats_optimization_tips", "")[:100],
+            "Skill_Recommendations": r.get("skill_recommendations", "")[:100],
             "Processing_Time_s": r["time"]
         } for r in results])
 

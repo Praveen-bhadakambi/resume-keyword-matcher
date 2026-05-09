@@ -7,7 +7,7 @@ from utils.embeddings import semantic_similarity
 from utils.skills import extract_skills
 from utils.role_classifier import classify_role
 
-from utils.services.llm_service import generate_resume_feedback
+from utils.services.llm_service import generate_all_ai_features
 
 from database import cursor, conn
 
@@ -77,9 +77,11 @@ async def match(data: RequestModel):
         # =========================
         # 🔹 SKILL EXTRACTION
         # =========================
+        # 🔥 CRITICAL FIX: Extract skills from ORIGINAL text, not preprocessed
+        # Preprocessing removes punctuation and stopwords needed for multi-word skills
         skills_start = time.time()
-        resume_skills = extract_skills(clean_resume)
-        jd_skills = extract_skills(clean_jd)
+        resume_skills = extract_skills(data.resume)
+        jd_skills = extract_skills(data.jd)
         skills_time = time.time() - skills_start
         print(f"🔹 Skills extracted in {skills_time:.2f}s")
 
@@ -108,19 +110,33 @@ async def match(data: RequestModel):
         print(f"🤖 Role classification completed in {role_time:.2f}s")
 
         # =========================
-        # 🤖 AI FEEDBACK (WITH TIMEOUT)
+        # 🤖 AI FEATURES (WITH TIMEOUT & FALLBACK)
         # =========================
-        ai_feedback = "AI feedback temporarily unavailable"
+        ai_features_start = time.time()
+        ai_features = {}
         try:
-            ai_start = time.time()
-            # Use shorter timeout for AI feedback to prevent blocking
-            ai_feedback = generate_resume_feedback(data.resume, data.jd, timeout_seconds=20)
-            ai_time = time.time() - ai_start
-            print(f"🤖 AI feedback generated in {ai_time:.2f}s")
+            # Call all AI features in parallel with fallbacks
+            ai_features = generate_all_ai_features(
+                resume=data.resume,
+                jd=data.jd,
+                matched_skills=common,
+                missing_skills=missing,
+                jd_skills=jd_skills,
+                job_role=predicted_role
+            )
+            ai_features_time = time.time() - ai_features_start
+            print(f"🤖 All AI features generated in {ai_features_time:.2f}s")
         except Exception as e:
-            ai_time = time.time() - ai_start if 'ai_start' in locals() else 0
-            print(f"⚠️ AI feedback failed after {ai_time:.2f}s: {str(e)}")
-            # Continue with default message - don't fail the entire request
+            ai_features_time = time.time() - ai_features_start
+            print(f"⚠️ AI features generation failed after {ai_features_time:.2f}s: {str(e)}")
+            # Use fallback messages - don't fail the request
+            ai_features = {
+                "resume_suggestions": "💡 Improve your resume by adding more quantifiable achievements and aligning with job description keywords.",
+                "ats_optimization_tips": "🎯 Use standard formatting, include JD keywords, and avoid graphics for better ATS compatibility.",
+                "resume_rewrite": "📝 Professional resume format with stronger action verbs and quantified results.",
+                "skill_recommendations": "🎓 Consider developing skills in emerging technologies and frameworks relevant to your target role.",
+                "action_verbs": "✍️ Use powerful action verbs like Architected, Engineered, Optimized, Transformed, Accelerated"
+            }
 
         # =========================
         # 🧪 DEBUG LOGS
@@ -133,6 +149,7 @@ async def match(data: RequestModel):
         print("Matched Skills:", common)
         print("Missing Skills:", missing)
         print("Predicted Role:", predicted_role)
+        print("AI Features Generated:", list(ai_features.keys()))
         print("===========================\n")
 
         # =========================
@@ -152,16 +169,30 @@ async def match(data: RequestModel):
             print(f"⚠️ Database error (non-critical): {str(db_e)}")
 
         # =========================
-        # 📤 FINAL RESPONSE
+        # 📤 FINAL RESPONSE - COMPREHENSIVE AI FEATURES
         # =========================
         return {
+            # Scoring Metrics
             "tfidf": tfidf,
             "semantic": semantic,
             "ats": ats,
+            
+            # Skills Analysis
             "matched_skills": common,
             "missing_skills": missing,
+            "skill_match_score": skill_score,
+            
+            # Role Prediction
             "predicted_role": predicted_role,
-            "ai_feedback": ai_feedback,
+            
+            # AI-Generated Features
+            "ai_resume_suggestions": ai_features.get("resume_suggestions", ""),
+            "ats_optimization_tips": ai_features.get("ats_optimization_tips", ""),
+            "resume_rewrite": ai_features.get("resume_rewrite", ""),
+            "skill_recommendations": ai_features.get("skill_recommendations", ""),
+            "action_verbs_suggestions": ai_features.get("action_verbs", ""),
+            
+            # Metadata
             "processing_time": round(total_time, 2)
         }
 
@@ -169,7 +200,7 @@ async def match(data: RequestModel):
         error_time = time.time() - start_time
         print(f"❌ CRITICAL ERROR after {error_time:.2f}s: {str(e)}")
 
-        # Return minimal response even on error
+        # Return minimal response even on error with all fields for UI compatibility
         return {
             "error": str(e),
             "tfidf": 0,
@@ -177,7 +208,12 @@ async def match(data: RequestModel):
             "ats": 0,
             "matched_skills": [],
             "missing_skills": [],
+            "skill_match_score": 0,
             "predicted_role": "Unknown",
-            "ai_feedback": "Error occurred during processing",
+            "ai_resume_suggestions": "⚠️ Error during processing. Please try again.",
+            "ats_optimization_tips": "⚠️ Error during processing. Please try again.",
+            "resume_rewrite": "⚠️ Error during processing. Please try again.",
+            "skill_recommendations": "⚠️ Error during processing. Please try again.",
+            "action_verbs_suggestions": "⚠️ Error during processing. Please try again.",
             "processing_time": round(error_time, 2)
         }
