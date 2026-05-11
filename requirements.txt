@@ -7,3 +7,7 @@ numpy
 pdfplumber
 python-docx
 sentence-transformers
+fastapi
+uvicorn
+requests
+matplotlib

@@ -131,11 +131,11 @@ async def match(data: RequestModel):
             print(f"⚠️ AI features generation failed after {ai_features_time:.2f}s: {str(e)}")
             # Use fallback messages - don't fail the request
             ai_features = {
-                "resume_suggestions": "💡 Improve your resume by adding more quantifiable achievements and aligning with job description keywords.",
-                "ats_optimization_tips": "🎯 Use standard formatting, include JD keywords, and avoid graphics for better ATS compatibility.",
+                "ai_feedback": "💡 Improve your resume by adding more quantifiable achievements and aligning with job description keywords.",
                 "resume_rewrite": "📝 Professional resume format with stronger action verbs and quantified results.",
-                "skill_recommendations": "🎓 Consider developing skills in emerging technologies and frameworks relevant to your target role.",
-                "action_verbs": "✍️ Use powerful action verbs like Architected, Engineered, Optimized, Transformed, Accelerated"
+                "ats_tips": "🎯 Use standard formatting, include JD keywords, and avoid graphics for better ATS compatibility.",
+                "skill_suggestions": "🎓 Consider developing skills in emerging technologies and frameworks relevant to your target role.",
+                "action_verbs": "✍️ Use powerful action verbs like Architected, Engineered, Optimized, Transformed, Accelerated."
             }
 
         # =========================
@@ -173,24 +173,24 @@ async def match(data: RequestModel):
         # =========================
         return {
             # Scoring Metrics
+            "ats": ats,
             "tfidf": tfidf,
             "semantic": semantic,
-            "ats": ats,
             
             # Skills Analysis
             "matched_skills": common,
             "missing_skills": missing,
-            "skill_match_score": skill_score,
+            "skill_match_score": round(skill_score, 2),
             
             # Role Prediction
             "predicted_role": predicted_role,
             
             # AI-Generated Features
-            "ai_resume_suggestions": ai_features.get("resume_suggestions", ""),
-            "ats_optimization_tips": ai_features.get("ats_optimization_tips", ""),
+            "ai_feedback": ai_features.get("ai_feedback", ""),
             "resume_rewrite": ai_features.get("resume_rewrite", ""),
-            "skill_recommendations": ai_features.get("skill_recommendations", ""),
-            "action_verbs_suggestions": ai_features.get("action_verbs", ""),
+            "ats_tips": ai_features.get("ats_tips", ""),
+            "skill_suggestions": ai_features.get("skill_suggestions", ""),
+            "action_verbs": ai_features.get("action_verbs", ""),
             
             # Metadata
             "processing_time": round(total_time, 2)
@@ -203,17 +203,17 @@ async def match(data: RequestModel):
         # Return minimal response even on error with all fields for UI compatibility
         return {
             "error": str(e),
+            "ats": 0,
             "tfidf": 0,
             "semantic": 0,
-            "ats": 0,
             "matched_skills": [],
             "missing_skills": [],
             "skill_match_score": 0,
             "predicted_role": "Unknown",
-            "ai_resume_suggestions": "⚠️ Error during processing. Please try again.",
-            "ats_optimization_tips": "⚠️ Error during processing. Please try again.",
+            "ai_feedback": "⚠️ Error during processing. Please try again.",
             "resume_rewrite": "⚠️ Error during processing. Please try again.",
-            "skill_recommendations": "⚠️ Error during processing. Please try again.",
-            "action_verbs_suggestions": "⚠️ Error during processing. Please try again.",
+            "ats_tips": "⚠️ Error during processing. Please try again.",
+            "skill_suggestions": "⚠️ Error during processing. Please try again.",
+            "action_verbs": "⚠️ Error during processing. Please try again.",
             "processing_time": round(error_time, 2)
         }

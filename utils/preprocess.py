@@ -2,7 +2,11 @@ import nltk
 import string
 from nltk.corpus import stopwords
 
-nltk.download('stopwords')
+try:
+    stopwords.words('english')
+except LookupError:
+    nltk.download('stopwords', quiet=True)
+
 
 def preprocess(text):
     text = text.lower()

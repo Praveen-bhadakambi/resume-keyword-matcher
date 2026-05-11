@@ -83,11 +83,11 @@ if resumes and jd:
                 skill_match_score = result.get("skill_match_score", 0)
                 
                 # AI-Generated Features
-                ai_resume_suggestions = result.get("ai_resume_suggestions", "")
-                ats_optimization_tips = result.get("ats_optimization_tips", "")
+                ai_feedback = result.get("ai_feedback", "")
                 resume_rewrite = result.get("resume_rewrite", "")
-                skill_recommendations = result.get("skill_recommendations", "")
-                action_verbs_suggestions = result.get("action_verbs_suggestions", "")
+                ats_tips = result.get("ats_tips", "")
+                skill_suggestions = result.get("skill_suggestions", "")
+                action_verbs = result.get("action_verbs", "")
                 processing_time = result.get("processing_time", 0)
 
                 results.append({
@@ -99,11 +99,11 @@ if resumes and jd:
                     "missing": missing_skills,
                     "role": predicted_role,
                     "skill_match_score": skill_match_score,
-                    "ai_resume_suggestions": ai_resume_suggestions,
-                    "ats_optimization_tips": ats_optimization_tips,
+                    "ai_feedback": ai_feedback,
                     "resume_rewrite": resume_rewrite,
-                    "skill_recommendations": skill_recommendations,
-                    "action_verbs": action_verbs_suggestions,
+                    "ats_tips": ats_tips,
+                    "skill_suggestions": skill_suggestions,
+                    "action_verbs": action_verbs,
                     "time": processing_time
                 })
 
@@ -198,19 +198,19 @@ if resumes and jd:
                 
                 st.markdown("---")
                 
-                # 3. AI RESUME SUGGESTIONS
-                st.markdown("### 💡 AI Resume Suggestions")
-                if r['ai_resume_suggestions']:
-                    st.info(r['ai_resume_suggestions'])
+                # 3. AI RESUME FEEDBACK
+                st.markdown("### 💡 AI Resume Feedback")
+                if r['ai_feedback']:
+                    st.info(r['ai_feedback'])
                 else:
-                    st.warning("⏳ Suggestions not available")
+                    st.warning("⏳ Feedback not available")
                 
                 st.markdown("---")
                 
                 # 4. ATS OPTIMIZATION TIPS
                 st.markdown("### 🎯 ATS Optimization Tips")
-                if r['ats_optimization_tips']:
-                    st.success(r['ats_optimization_tips'])
+                if r['ats_tips']:
+                    st.success(r['ats_tips'])
                 else:
                     st.warning("⏳ Tips not available")
                 
@@ -223,25 +223,24 @@ if resumes and jd:
                         st.code(r['resume_rewrite'], language="markdown")
                 else:
                     st.warning("⏳ Rewrite not available")
-                
+
                 st.markdown("---")
-                
-                # 6. SKILL RECOMMENDATIONS
-                st.markdown("### 🎓 Skill Development Recommendations")
-                if r['skill_recommendations']:
-                    st.info(r['skill_recommendations'])
+
+                # 6. MISSING SKILL SUGGESTIONS
+                st.markdown("### 🎓 Missing Skill Suggestions")
+                if r['skill_suggestions']:
+                    st.info(r['skill_suggestions'])
                 else:
-                    st.warning("⏳ Recommendations not available")
-                
+                    st.warning("⏳ Suggestions not available")
+
                 st.markdown("---")
-                
+
                 # 7. ACTION VERBS
                 st.markdown("### ✍️ Stronger Action Verbs")
                 if r['action_verbs']:
-                    with st.expander("👉 Click to see action verb suggestions"):
-                        st.info(r['action_verbs'])
+                    st.info(r['action_verbs'])
                 else:
-                    st.warning("⏳ Suggestions not available")
+                    st.warning("⏳ Verb suggestions not available")
 
         # =========================
         # 📊 CHARTS
@@ -276,7 +275,7 @@ if resumes and jd:
 
         with col2:
             st.metric("Semantic Similarity", f"{top['semantic']:.1f}%")
-            st.metric("Skill Match", f"{top['skill_match_score']:.0f}%")
+            st.metric("Skill Match", f"{top.get('skill_match_score', 0):.0f}%")
 
         with col3:
             st.metric("Predicted Role", top['role'])
@@ -303,7 +302,7 @@ if resumes and jd:
 
         # Score Visualization
         labels = ["TF-IDF", "Semantic", "Skill Match", "ATS"]
-        values = [top["tfidf"], top["semantic"], top["skill_match_score"], top["ats"]]
+        values = [top["tfidf"], top["semantic"], top.get("skill_match_score", 0), top["ats"]]
 
         fig2, ax2 = plt.subplots(figsize=(8, 4))
         colors = ["#2196f3", "#ff9800", "#4caf50", "#f44336"]
@@ -319,17 +318,17 @@ if resumes and jd:
         st.markdown("---")
         st.subheader("🤖 AI-Powered Insights for Top Resume")
         
-        # Resume Suggestions
-        with st.expander("💡 AI Resume Suggestions", expanded=False):
-            if top['ai_resume_suggestions']:
-                st.info(top['ai_resume_suggestions'])
+        # Resume Feedback
+        with st.expander("💡 AI Resume Feedback", expanded=False):
+            if top['ai_feedback']:
+                st.info(top['ai_feedback'])
             else:
-                st.warning("⏳ Generating suggestions...")
+                st.warning("⏳ Generating feedback...")
         
         # ATS Tips
         with st.expander("🎯 ATS Optimization Tips", expanded=False):
-            if top['ats_optimization_tips']:
-                st.success(top['ats_optimization_tips'])
+            if top['ats_tips']:
+                st.success(top['ats_tips'])
             else:
                 st.warning("⏳ Generating tips...")
         
@@ -340,17 +339,17 @@ if resumes and jd:
                 st.info("👆 Use the above stronger bullet points in your resume")
             else:
                 st.warning("⏳ Generating rewrite...")
-        
+
         # Skill Recommendations
-        with st.expander("🎓 Missing Skills - Development Plan", expanded=False):
-            if top['skill_recommendations']:
-                st.info(top['skill_recommendations'])
+        with st.expander("🎓 Missing Skill Suggestions", expanded=False):
+            if top.get('skill_suggestions'):
+                st.info(top['skill_suggestions'])
             else:
                 st.warning("⏳ Generating recommendations...")
-        
+
         # Action Verbs
         with st.expander("✍️ Stronger Action Verbs", expanded=False):
-            if top['action_verbs']:
+            if top.get('action_verbs'):
                 st.markdown(top['action_verbs'])
             else:
                 st.warning("⏳ Generating suggestions...")
@@ -363,13 +362,15 @@ if resumes and jd:
             "ATS_Score": r["ats"],
             "TF-IDF_Score": r["tfidf"],
             "Semantic_Score": r["semantic"],
-            "Skill_Match_Score": r["skill_match_score"],
+            "Skill_Match_Score": r.get("skill_match_score", 0),
             "Predicted_Role": r["role"],
             "Matched_Skills": ", ".join(r["matched"]),
             "Missing_Skills": ", ".join(r["missing"]),
-            "Resume_Suggestions": r.get("ai_resume_suggestions", "")[:100],
-            "ATS_Tips": r.get("ats_optimization_tips", "")[:100],
-            "Skill_Recommendations": r.get("skill_recommendations", "")[:100],
+            "AI_Feedback": r.get("ai_feedback", "")[:100],
+            "ATS_Tips": r.get("ats_tips", "")[:100],
+            "Resume_Rewrite": r.get("resume_rewrite", "")[:100],
+            "Skill_Suggestions": r.get("skill_suggestions", "")[:100],
+            "Action_Verbs": r.get("action_verbs", "")[:100],
             "Processing_Time_s": r["time"]
         } for r in results])
 
