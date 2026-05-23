@@ -1,18 +1,85 @@
-from sentence_transformers import SentenceTransformer, util
+﻿from dotenv import load_dotenv
+import os
 
-_model = None
+load_dotenv()
 
-
-def _get_model():
-    global _model
-    if _model is None:
-        _model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder='./models')
-    return _model
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 
-def semantic_similarity(resume, jd):
-    model = _get_model()
-    emb1 = model.encode(resume, convert_to_tensor=True)
-    emb2 = model.encode(jd, convert_to_tensor=True)
-    score = util.pytorch_cos_sim(emb1, emb2)
-    return round(float(score) * 100, 2)
+
+
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+# =========================
+# 🚀 LOAD MODEL ONLY ONCE
+# =========================
+model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)
+
+
+# =========================
+# 🚀 FAST SEMANTIC SIMILARITY
+# =========================
+def semantic_similarity(
+
+    resume,
+
+    jd
+):
+
+    try:
+
+        # =========================
+        # ✅ REDUCE TEXT SIZE
+        # =========================
+        resume = resume[:500]
+
+        jd = jd[:500]
+
+        # =========================
+        # 🚀 FAST EMBEDDINGS
+        # =========================
+        embeddings = model.encode(
+
+            [resume, jd],
+
+            convert_to_numpy=True,
+
+            show_progress_bar=False
+        )
+
+        # =========================
+        # 🚀 COSINE SIMILARITY
+        # =========================
+        similarity = cosine_similarity(
+
+            [embeddings[0]],
+
+            [embeddings[1]]
+        )[0][0]
+
+        # =========================
+        # ✅ FIX NUMPY FLOAT ERROR
+        # =========================
+        similarity = float(similarity)
+
+        # =========================
+        # ✅ RETURN NORMAL PYTHON FLOAT
+        # =========================
+        return round(
+            similarity * 100,
+            2
+        )
+
+    except Exception as e:
+
+        print(
+            "Semantic Error:",
+            str(e)
+        )
+
+        # ✅ RETURN SAFE PYTHON FLOAT
+        return 0.0
