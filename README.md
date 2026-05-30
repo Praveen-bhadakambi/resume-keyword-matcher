@@ -1,40 +1,62 @@
-# 📄 AI-Powered Resume Keyword Matcher
+# 📄 AI Resume Keyword Matcher
 
-An AI-powered ATS (Applicant Tracking System) built using FastAPI, Streamlit, NLP, and Machine Learning to match resumes with job descriptions using TF-IDF, semantic similarity, and skill gap analysis.
+An AI-powered Resume Analysis and ATS Optimization platform built using FastAPI, Streamlit, NLP, Semantic Similarity, and Ollama LLM.
+
+This project helps candidates optimize resumes for Applicant Tracking Systems (ATS) by analyzing resume content against job descriptions using AI and NLP techniques.
 
 ---
 
 # 🚀 Features
 
-✅ Resume vs Job Description Matching  
-✅ ATS Score Calculation  
-✅ TF-IDF Similarity Analysis  
-✅ Semantic Similarity using Sentence Transformers  
-✅ Skill Extraction & Gap Analysis  
-✅ Multi-Resume Ranking System  
-✅ CSV Export of Results  
-✅ Interactive Dashboard & Charts  
-✅ SQLite Database for Persistent Storage  
-✅ FastAPI Backend + Streamlit Frontend  
+## ✅ ATS Resume Scoring
+Calculates ATS score using:
+- TF-IDF similarity
+- Semantic similarity
+- Skill matching percentage
+
+## ✅ Semantic Resume Analysis
+Uses Sentence Transformers and cosine similarity to compare resume and job description semantically.
+
+## ✅ AI Resume Suggestions
+Generates intelligent resume improvement suggestions using Llama3.
+
+## ✅ AI Resume Rewrite
+Creates stronger professional resume bullet points.
+
+## ✅ ATS Optimization Tips
+Provides ATS-friendly resume optimization recommendations.
+
+## ✅ Missing Skill Detection
+Identifies missing technical skills from the job description.
+
+## ✅ Job Role Prediction
+Predicts suitable technical role based on resume skills.
+
+## ✅ Resume Ranking
+Ranks multiple resumes based on ATS score.
+
+## ✅ History Dashboard
+Stores and displays previous analysis results using SQLite.
+
+## ✅ CSV Export
+Allows exporting analysis results as CSV.
 
 ---
 
-# 🧠 Tech Stack
+# 🛠️ Tech Stack
 
 ## Frontend
 - Streamlit
-- Matplotlib
-- Pandas
 
 ## Backend
 - FastAPI
-- Uvicorn
-- Requests
 
-## NLP & Machine Learning
-- Scikit-learn (TF-IDF)
-- Sentence Transformers
-- NLTK
+## AI / NLP
+- Ollama Llama3
+- SentenceTransformers
+- Scikit-learn
+- TF-IDF
+- Cosine Similarity
 
 ## Database
 - SQLite
@@ -46,19 +68,21 @@ An AI-powered ATS (Applicant Tracking System) built using FastAPI, Streamlit, NL
 ```bash
 resume-keyword-matcher/
 │
-├── app.py
 ├── api.py
+├── app.py
 ├── database.py
 ├── requirements.txt
 ├── README.md
+├── .gitignore
 │
 ├── utils/
-│   ├── parser.py
 │   ├── preprocess.py
 │   ├── similarity.py
 │   ├── embeddings.py
 │   ├── skills.py
+│   ├── role_classifier.py
+│   │
+│   └── services/
+│       └── llm_service.py
 │
-├── outputs/
-│
-└── resumes.db
+├── resumes.db
