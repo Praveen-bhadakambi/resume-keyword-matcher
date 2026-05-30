@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+import time
 
 from utils.preprocess import preprocess
 from utils.similarity import compute_similarity
@@ -61,6 +62,8 @@ def ats_score(
 @app.post("/match")
 async def match(data: RequestModel):
 
+    request_start = time.time()
+
     try:
 
         # =========================
@@ -79,12 +82,19 @@ async def match(data: RequestModel):
         # =========================
         try:
 
+            start = time.time()
+
             tfidf = compute_similarity(
 
-                clean_resume,
+              clean_resume,
 
-                clean_jd
-            )
+               clean_jd
+           )
+
+            print(
+              f"⏱️ TFIDF TIME: "
+              f"{time.time() - start:.2f}s"
+          )
 
         except Exception as e:
 
@@ -97,11 +107,18 @@ async def match(data: RequestModel):
         # =========================
         try:
 
+            start = time.time()
+
             semantic = semantic_similarity(
 
                 clean_resume,
 
                 clean_jd
+            )
+
+            print(
+            f"⏱️ SEMANTIC TIME: "
+            f"{time.time() - start:.2f}s"
             )
 
         except Exception as e:
@@ -195,18 +212,41 @@ async def match(data: RequestModel):
         # =========================
         try:
 
-            ai_results = generate_all_ai_features(
+            start = time.time()
 
-                data.resume,
+            if len(data.resume) > 8000:
+                print("⚠️ Large resume detected - skipping AI")
 
-                data.jd,
+                ai_results = {
 
-                resume_skills,
 
-                missing,
+                    "ai_feedback":
+                    "Resume too large for AI analysis.",
 
-                predicted_role
-            )
+                    "resume_rewrite":
+                    "Use shorter resume sections.",
+
+                    "ats_tips":
+                    "Reduce unnecessary content."
+        }
+
+            else:
+                ai_results = generate_all_ai_features(
+                     data.resume,
+
+                    data.jd,
+
+                    resume_skills,
+
+                    missing,
+
+                    predicted_role
+        )
+
+            print(
+               f"⏱️ AI TIME: "
+               f"{time.time() - start:.2f}s"
+       )
 
         except Exception as e:
 
@@ -302,6 +342,12 @@ async def match(data: RequestModel):
         print("ATS:", ats)
 
         print("===========================\n")
+
+
+        print(
+            f"🚀 TOTAL REQUEST TIME: "
+            f"{time.time() - request_start:.2f}s"
+        )
 
         # =========================
         # ✅ FINAL RESPONSE

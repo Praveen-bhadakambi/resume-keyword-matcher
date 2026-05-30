@@ -29,9 +29,9 @@ def generate_all_ai_features(
         # =========================
         # ✂️ SMALLER INPUT
         # =========================
-        resume = resume[:800]
+        resume = resume[:500]
 
-        jd = jd[:500]
+        jd = jd[:300]
 
         skills = ", ".join(
             resume_skills or []
@@ -81,7 +81,7 @@ def generate_all_ai_features(
         # =========================
         response = ollama.chat(
 
-            model="llama3",
+            model="phi3",
 
             messages=[
                 {
