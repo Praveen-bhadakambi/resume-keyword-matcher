@@ -8,16 +8,39 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 
 
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
 # =========================
 # 🚀 LOAD MODEL ONLY ONCE
 # =========================
-model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+model = None
+
+
+def get_model():
+
+    global model
+
+    if model is None:
+
+        try:
+
+            from sentence_transformers import SentenceTransformer
+
+            model = SentenceTransformer(
+                "all-MiniLM-L6-v2"
+            )
+
+        except Exception as e:
+
+            print(
+                "Semantic model unavailable:",
+                str(e)
+            )
+
+            return None
+
+    return model
 
 
 # =========================
@@ -32,6 +55,12 @@ def semantic_similarity(
 
     try:
 
+        current_model = get_model()
+
+        if current_model is None:
+
+            return 0.0
+
         # =========================
         # ✅ REDUCE TEXT SIZE
         # =========================
@@ -42,7 +71,7 @@ def semantic_similarity(
         # =========================
         # 🚀 FAST EMBEDDINGS
         # =========================
-        embeddings = model.encode(
+        embeddings = current_model.encode(
 
             [resume, jd],
 
