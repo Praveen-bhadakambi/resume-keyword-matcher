@@ -1,14 +1,15 @@
 ﻿from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 load_dotenv()
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-
-
-
 from sklearn.metrics.pairwise import cosine_similarity
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+MODEL_CACHE_DIR = str(ROOT_DIR / "models")
 
 
 # =========================
@@ -28,7 +29,8 @@ def get_model():
             from sentence_transformers import SentenceTransformer
 
             model = SentenceTransformer(
-                "all-MiniLM-L6-v2"
+                "all-MiniLM-L6-v2",
+                cache_folder=MODEL_CACHE_DIR
             )
 
         except Exception as e:

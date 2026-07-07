@@ -1,13 +1,48 @@
 ﻿from dotenv import load_dotenv
 import os
+import time
+from queue import Queue
+from threading import Thread
 
 load_dotenv()
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 
+try:
+    import ollama
+except Exception:  # pragma: no cover - optional dependency
+    ollama = None
 
-import ollama
-import time
+
+def _build_fast_ai_response(
+    resume_skills=None,
+    missing_skills=None,
+    predicted_role=None
+):
+    skills = ", ".join(resume_skills or [])
+    missing = ", ".join(missing_skills or [])
+    role = predicted_role or "Software Engineer"
+
+    feedback = (
+        f"Add more role-specific keywords like {missing or 'relevant skills'} "
+        f"to better match {role}."
+        if missing
+        else "Highlight measurable impact and role-specific achievements."
+    )
+    rewrite = (
+        f"Tailored {role} resume summary emphasizing relevant experience, "
+        f"core skills such as {skills or 'domain expertise'}, and measurable impact."
+    )
+    ats = (
+        "Use ATS-friendly formatting, concise bullets, and keyword-rich phrases "
+        "that mirror the job description."
+    )
+
+    return {
+        "ai_feedback": feedback,
+        "resume_rewrite": rewrite,
+        "ats_tips": ats,
+    }
 
 
 # =========================
@@ -77,29 +112,53 @@ def generate_all_ai_features(
         """
 
         # =========================
-        # 🚀 FAST OLLAMA CALL
+        # 🚀 FAST OLLAMA CALL WITH TIMEOUT
         # =========================
-        response = ollama.chat(
+        if ollama is None:
+            return _build_fast_ai_response(
+                resume_skills=resume_skills,
+                missing_skills=missing_skills,
+                predicted_role=predicted_role,
+            )
 
-            model="llama3",
+        result_queue = Queue()
 
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+        def _run_ollama_call():
+            try:
+                response = ollama.chat(
+                    model="llama3",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    options={
+                        "temperature": 0.1,
+                        "num_predict": 30,
+                    },
+                )
+                result_queue.put(("ok", response))
+            except Exception as exc:
+                result_queue.put(("error", str(exc)))
 
-            options={
+        thread = Thread(target=_run_ollama_call, daemon=True)
+        thread.start()
 
-                # ✅ VERY FAST SETTINGS
-                "temperature": 0.1,
+        try:
+            result_type, result = result_queue.get(timeout=2)
+        except Exception:
+            print("⚠️ Ollama slow; using local AI fallback")
+            return _build_fast_ai_response(
+                resume_skills=resume_skills,
+                missing_skills=missing_skills,
+                predicted_role=predicted_role,
+            )
 
-                "num_predict": 40
-            }
-        )
+        if result_type != "ok":
+            raise RuntimeError(result)
 
-        output = response["message"]["content"]
+        output = result["message"]["content"]
 
         elapsed = time.time() - start_time
 
@@ -196,14 +255,8 @@ def generate_all_ai_features(
 
         print("❌ AI ERROR:", str(e))
 
-        return {
-
-            "ai_feedback":
-            "Improve ATS keyword matching.",
-
-            "resume_rewrite":
-            "Developed scalable backend APIs.",
-
-            "ats_tips":
-            "Use ATS-friendly formatting."
-        }
+        return _build_fast_ai_response(
+            resume_skills=resume_skills,
+            missing_skills=missing_skills,
+            predicted_role=predicted_role,
+        )
